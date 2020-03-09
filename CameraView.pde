@@ -1,9 +1,11 @@
 PImage back;
 Planet star;
 PFont font;
-boolean rotateUY, rotateDY, rotateLX, rotateRX, splashScreen;
-float rXD, rYD;
+boolean moveCameraUp, moveCameraDown, moveCameraRight, moveCameraLeft, moveShipUp, moveShipDown, moveShipRight, moveShipLeft, splashScreen;
 PVector textColor;
+int lookOffsetX, lookOffsetY;
+int shipOffsetX, shipOffsetY;
+Ship camera;
 
 void setup(){
   size(1280,720,P3D);
@@ -33,15 +35,25 @@ void setup(){
   
   back.resize(width,height);
   
-  rotateUY = false;
-  rotateDY = false;
-  rotateLX = false;
-  rotateRX = false;
+  moveCameraUp = false;
+  moveCameraDown = false;
+  moveCameraRight = false;
+  moveCameraLeft = false;
+  moveShipUp = false;
+  moveShipDown = false;
+  moveShipRight = false;
+  moveShipLeft = false;
   
   splashScreen = true;
   
-  rYD = 0.0;
-  rXD = 0.0;
+  lookOffsetX = 0;
+  lookOffsetY = 0;
+  
+  shipOffsetX = 0;
+  shipOffsetY = 0;
+  
+  camera = new Ship(new PVector(width/2.0-shipOffsetX, height/2.0-shipOffsetY, (height/2.0) / tan(PI*30.0 / 180.0)),
+  new PVector(width/2.0-lookOffsetX, height/2.0-lookOffsetY, 0), new PVector(0, 1, 0));
   
   textColor = new PVector(255,110,243);
   font = createFont("assets/RobotoCondensed-Bold.ttf",128);
@@ -54,10 +66,60 @@ void draw(){
   background(back);
   
   if(splashScreen){
+    drawSplashScreen();
+  } else {
+    camera.setCamera(new PVector(width/2.0-shipOffsetX, height/2.0, ((height/2.0) / tan(PI*30.0 / 180.0))-shipOffsetY),
+    new PVector(width/2.0-lookOffsetX, height/2.0-lookOffsetY, 0), new PVector(0, 1, 0));
+    
+    camera.updateMainCamera();
+    
+    control();
+    star.draw();
+    
+  }
+  
+  
+}
+
+void control(){
+  if(moveCameraUp){
+    //rXD += 0.05;
+    lookOffsetY += 10;
+  } else if (moveCameraDown){
+    //rXD -= 0.05;
+    lookOffsetY -= 10;
+  }
+  
+  if(moveCameraLeft){
+    //rYD -= 0.05;
+    lookOffsetX += 10;
+  } else if (moveCameraRight){
+    //rYD += 0.05;
+    lookOffsetX -= 10;
+  }
+  
+  if(moveShipUp){
+    //rXD += 0.05;
+    shipOffsetY += 10;
+  } else if (moveShipDown){
+    //rXD -= 0.05;
+    shipOffsetY -= 10;
+  }
+  
+  if(moveShipLeft){
+    //rYD -= 0.05;
+    shipOffsetX += 10;
+  } else if (moveShipRight){
+    //rYD += 0.05;
+    shipOffsetX -= 10;
+  }
+}
+
+void drawSplashScreen(){
     fill(textColor.x, textColor.y, textColor.z);
     textAlign(CENTER);
     textSize(128);
-    text("Orbital System",0,-100);
+    text("Camera View",0,-100);
     textSize(32);
     text("WASD para rotar el sistema",0,+50);
     text("Barra Espaciadora para empezar",0,+100);
@@ -66,28 +128,6 @@ void draw(){
     textColor.y += random(-10,10);
     textColor.z += random(-10,10);
     noFill();
-  } else {
-    rotateX(rXD);
-    rotateY(rYD);
-    control();
-    star.draw();
-  }
-  
-  
-}
-
-void control(){
-  if(rotateUY){
-    rXD += 0.05;
-  } else if (rotateDY){
-    rXD -= 0.05;
-  }
-  
-  if(rotateLX){
-    rYD -= 0.05;
-  } else if (rotateRX){
-    rYD += 0.05;
-  }
 }
 
 void keyPressed(){
@@ -95,26 +135,49 @@ void keyPressed(){
     splashScreen = false;
   }
   if(key == 'w'){
-    rotateUY = true;
+    moveCameraUp = true;
   } else if(key == 's'){
-    rotateDY = true;
+    moveCameraDown = true;
   }
   if(key == 'd'){
-    rotateRX = true;
+    moveCameraRight = true;
   } else if(key == 'a'){
-    rotateLX = true;
+    moveCameraLeft = true;
   }  
+  
+  if(keyCode == UP){
+    moveShipUp = true;
+  } else if(keyCode == DOWN){
+    moveShipDown = true;
+  }
+  if(keyCode == RIGHT){
+    println("Puto");
+    moveShipRight = true;
+  } else if(keyCode == LEFT){
+    moveShipLeft = true;
+  }
 }
 
 void keyReleased(){
   if(key == 'w'){
-    rotateUY = false;
+    moveCameraUp = false;
   } else if(key == 's'){
-    rotateDY = false;
+    moveCameraDown = false;
   }
   if(key == 'd'){
-    rotateRX = false;
+    moveCameraRight = false;
   } else if(key == 'a'){
-    rotateLX = false;
+    moveCameraLeft = false;
   }  
+  
+  if(keyCode == UP){
+    moveShipUp = false;
+  } else if(keyCode == DOWN){
+    moveShipDown = false;
+  }
+  if(keyCode == RIGHT){
+    moveShipRight = false;
+  } else if(keyCode == LEFT){
+    moveShipLeft = false;
+  }
 }
