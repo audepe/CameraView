@@ -1,15 +1,19 @@
 PImage back;
+PImage tractorTexture;
 Planet star;
 PFont font;
-boolean moveCameraUp, moveCameraDown, moveCameraRight, moveCameraLeft, moveShipUp, moveShipDown, moveShipRight, moveShipLeft, splashScreen;
+boolean moveTractorUp, moveTractorDown, moveTractorRight, moveTractorLeft,
+moveCameraUp, moveCameraDown, moveCameraRight, moveCameraLeft, splashScreen,
+firstPerson;
+
 PVector textColor;
 
 PShape tractor;
 float yaw = -180;
 float pitch = 10;
-PVector direction = new PVector();
-PVector cameraPos = new PVector();
-PVector shipPos = new PVector(0, 0, -600);
+PVector tractorDirection = new PVector();
+PVector cameraPosition = new PVector();
+PVector tractorPosition = new PVector(300, 0, -300);
 PVector up = new PVector(0, 1, 0);
 int dist = 500;
 float horizontalDistance;
@@ -45,14 +49,14 @@ void setup(){
   
   back.resize(width,height);
   
+  moveTractorUp = false;
+  moveTractorDown = false;
+  moveTractorRight = false;
+  moveTractorLeft = false;
   moveCameraUp = false;
   moveCameraDown = false;
   moveCameraRight = false;
   moveCameraLeft = false;
-  moveShipUp = false;
-  moveShipDown = false;
-  moveShipRight = false;
-  moveShipLeft = false;
   
   splashScreen = true;
     
@@ -60,10 +64,15 @@ void setup(){
   font = createFont("assets/RobotoCondensed-Bold.ttf",128);
   textFont(font);
   
-  tractor = loadShape("assets/tractor/tractor.obj");
+  tractor = loadShape("assets/tractor/Tractor.obj");
   updateTractor();
   tractor.rotateX(radians(180));
-  tractor.scale(0.1);
+  tractor.rotateY(radians(180));
+  
+  firstPerson = false;
+  
+  tractorTexture = loadImage("assets/tractor/Texure Tractor.jpg");
+  tractor.setTexture(tractorTexture);
 }
 
 void draw(){
@@ -74,44 +83,54 @@ void draw(){
   if(splashScreen){
     drawSplashScreen();
   } else {
-    control();
-    camera(
-    cameraPos.x, cameraPos.y, cameraPos.z,
-    shipPos.x, shipPos.y, shipPos.z,
-    up.x, up.z, up.y);
+    if(firstPerson){
+      control();
+      camera(
+      cameraPosition.x, cameraPosition.y, cameraPosition.z,
+      tractorPosition.x, tractorPosition.y, tractorPosition.z,
+      up.x, up.z, up.y); 
+      
+    } else {
+      camera(0,0,-700,
+      0, 0, -100,
+      0, 1, 0);
+    }
     
-    star.draw();
+    pushMatrix();
+    translate(tractorPosition.x, tractorPosition.y, tractorPosition.z);
+    tractor.setTexture(tractorTexture);
+    shape(tractor);
+    popMatrix();
     
-  }
-  
-  
+    star.draw();    
+  }  
 }
 
 void control(){
-  if (moveCameraUp){
-    shipPos.sub(PVector.mult(direction, step));
-  } else if (moveCameraDown){
-    shipPos.add(PVector.mult(direction, step));
+  if (moveTractorUp){
+    tractorPosition.sub(PVector.mult(tractorDirection, step));
+  } else if (moveTractorDown){
+    tractorPosition.add(PVector.mult(tractorDirection, step));
   }
   
-  if (moveCameraLeft){
-    shipPos.x += step;
-  } else if (moveCameraRight){
-    shipPos.x -= step;
+  if (moveTractorLeft){
+    tractorPosition.x += step;
+  } else if (moveTractorRight){
+    tractorPosition.x -= step;
   }
   
-  if (moveShipUp && pitch > -89.0 && pitch > 1){
+  if (moveCameraUp && pitch > -89.0 && pitch > 1){
     pitch = (pitch - angleStep) % 360;
     tractor.rotateX(-radians(angleStep));
-  } else if (moveShipDown && pitch < 89.0){
+  } else if (moveCameraDown && pitch < 89.0){
     pitch = (pitch + angleStep) % 360;
     tractor.rotateX(radians(angleStep));
   }
   
-  if (moveShipLeft){
+  if (moveCameraLeft){
     yaw = (yaw - angleStep) % 360;
     tractor.rotateY(-radians(angleStep));
-  } else if (moveShipRight){
+  } else if (moveCameraRight){
     yaw = (yaw + angleStep) % 360;
     tractor.rotateY(+radians(angleStep));
   }
@@ -121,13 +140,13 @@ void control(){
 void updateTractor(){
   horizontalDistance = dist * cos(radians(pitch));
   verticalDistance = dist * sin(radians(pitch));
-  cameraPos.y = shipPos.y + verticalDistance;
-  cameraPos.x = shipPos.x + horizontalDistance * sin(radians(yaw));
-  cameraPos.z = shipPos.z + horizontalDistance * cos(radians(yaw));
-  direction.x = sin(radians(yaw)) * cos(radians(pitch));
-  direction.z = cos(radians(yaw)) * cos(radians(pitch));
-  direction.y = sin(radians(pitch));
-  direction.normalize();
+  cameraPosition.y = tractorPosition.y + verticalDistance;
+  cameraPosition.x = tractorPosition.x + horizontalDistance * sin(radians(yaw));
+  cameraPosition.z = tractorPosition.z + horizontalDistance * cos(radians(yaw));
+  tractorDirection.x = sin(radians(yaw)) * cos(radians(pitch));
+  tractorDirection.z = cos(radians(yaw)) * cos(radians(pitch));
+  tractorDirection.y = sin(radians(pitch));
+  tractorDirection.normalize();
 }
 
 void drawSplashScreen(){
@@ -139,7 +158,7 @@ void drawSplashScreen(){
     text("WASD para mover el tractor",0,+50);
     text("Flechas para mover la cámara",0,+100);
     text("Barra Espaciadora para empezar",0,+150);
-    
+    text("Enter para alternar la vista",0,+200);
     textColor.x += random(-10,10);
     textColor.y += random(-10,10);
     textColor.z += random(-10,10);
@@ -151,49 +170,52 @@ void keyPressed(){
     splashScreen = false;
   }
   if(key == 'w'){
-    moveCameraUp = true;
+    moveTractorUp = true;
   } else if(key == 's'){
-    moveCameraDown = true;
+    moveTractorDown = true;
   }
   if(key == 'd'){
-    moveCameraRight = true;
+    moveTractorRight = true;
   } else if(key == 'a'){
-    moveCameraLeft = true;
+    moveTractorLeft = true;
   }  
   
   if(keyCode == UP){
-    moveShipUp = true;
+    moveCameraUp = true;
   } else if(keyCode == DOWN){
-    moveShipDown = true;
+    moveCameraDown = true;
   }
   if(keyCode == RIGHT){
-    println("Puto");
-    moveShipRight = true;
+    moveCameraRight = true;
   } else if(keyCode == LEFT){
-    moveShipLeft = true;
+    moveCameraLeft = true;
+  }
+  
+  if(keyCode == ENTER){
+    firstPerson = !firstPerson;
   }
 }
 
 void keyReleased(){
   if(key == 'w'){
-    moveCameraUp = false;
+    moveTractorUp = false;
   } else if(key == 's'){
-    moveCameraDown = false;
+    moveTractorDown = false;
   }
   if(key == 'd'){
-    moveCameraRight = false;
+    moveTractorRight = false;
   } else if(key == 'a'){
-    moveCameraLeft = false;
+    moveTractorLeft = false;
   }  
   
   if(keyCode == UP){
-    moveShipUp = false;
+    moveCameraUp = false;
   } else if(keyCode == DOWN){
-    moveShipDown = false;
+    moveCameraDown = false;
   }
   if(keyCode == RIGHT){
-    moveShipRight = false;
+    moveCameraRight = false;
   } else if(keyCode == LEFT){
-    moveShipLeft = false;
+    moveCameraLeft = false;
   }
 }
