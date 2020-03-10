@@ -3,9 +3,19 @@ Planet star;
 PFont font;
 boolean moveCameraUp, moveCameraDown, moveCameraRight, moveCameraLeft, moveShipUp, moveShipDown, moveShipRight, moveShipLeft, splashScreen;
 PVector textColor;
-int lookOffsetX, lookOffsetY;
-int shipOffsetX, shipOffsetY;
-Ship camera;
+
+PShape tractor;
+float yaw = -180;
+float pitch = 10;
+PVector direction = new PVector();
+PVector cameraPos = new PVector();
+PVector shipPos = new PVector(0, 0, -600);
+PVector up = new PVector(0, 1, 0);
+int dist = 500;
+float horizontalDistance;
+float verticalDistance;
+float step = 5.0;
+float angleStep = 1;
 
 void setup(){
   size(1280,720,P3D);
@@ -45,19 +55,15 @@ void setup(){
   moveShipLeft = false;
   
   splashScreen = true;
-  
-  lookOffsetX = 0;
-  lookOffsetY = 0;
-  
-  shipOffsetX = 0;
-  shipOffsetY = 0;
-  
-  camera = new Ship(new PVector(width/2.0-shipOffsetX, height/2.0-shipOffsetY, (height/2.0) / tan(PI*30.0 / 180.0)),
-  new PVector(width/2.0-lookOffsetX, height/2.0-lookOffsetY, 0), new PVector(0, 1, 0));
-  
+    
   textColor = new PVector(255,110,243);
   font = createFont("assets/RobotoCondensed-Bold.ttf",128);
   textFont(font);
+  
+  tractor = loadShape("assets/tractor/tractor.obj");
+  updateTractor();
+  tractor.rotateX(radians(180));
+  tractor.scale(0.1);
 }
 
 void draw(){
@@ -68,12 +74,12 @@ void draw(){
   if(splashScreen){
     drawSplashScreen();
   } else {
-    camera.setCamera(new PVector(width/2.0-shipOffsetX, height/2.0, ((height/2.0) / tan(PI*30.0 / 180.0))-shipOffsetY),
-    new PVector(width/2.0-lookOffsetX, height/2.0-lookOffsetY, 0), new PVector(0, 1, 0));
-    
-    camera.updateMainCamera();
-    
     control();
+    camera(
+    cameraPos.x, cameraPos.y, cameraPos.z,
+    shipPos.x, shipPos.y, shipPos.z,
+    up.x, up.z, up.y);
+    
     star.draw();
     
   }
@@ -82,37 +88,46 @@ void draw(){
 }
 
 void control(){
-  if(moveCameraUp){
-    //rXD += 0.05;
-    lookOffsetY += 10;
+  if (moveCameraUp){
+    shipPos.sub(PVector.mult(direction, step));
   } else if (moveCameraDown){
-    //rXD -= 0.05;
-    lookOffsetY -= 10;
+    shipPos.add(PVector.mult(direction, step));
   }
   
-  if(moveCameraLeft){
-    //rYD -= 0.05;
-    lookOffsetX += 10;
+  if (moveCameraLeft){
+    shipPos.x += step;
   } else if (moveCameraRight){
-    //rYD += 0.05;
-    lookOffsetX -= 10;
+    shipPos.x -= step;
   }
   
-  if(moveShipUp){
-    //rXD += 0.05;
-    shipOffsetY += 10;
-  } else if (moveShipDown){
-    //rXD -= 0.05;
-    shipOffsetY -= 10;
+  if (moveShipUp && pitch > -89.0 && pitch > 1){
+    pitch = (pitch - angleStep) % 360;
+    tractor.rotateX(-radians(angleStep));
+  } else if (moveShipDown && pitch < 89.0){
+    pitch = (pitch + angleStep) % 360;
+    tractor.rotateX(radians(angleStep));
   }
   
-  if(moveShipLeft){
-    //rYD -= 0.05;
-    shipOffsetX += 10;
+  if (moveShipLeft){
+    yaw = (yaw - angleStep) % 360;
+    tractor.rotateY(-radians(angleStep));
   } else if (moveShipRight){
-    //rYD += 0.05;
-    shipOffsetX -= 10;
+    yaw = (yaw + angleStep) % 360;
+    tractor.rotateY(+radians(angleStep));
   }
+  updateTractor();
+}
+
+void updateTractor(){
+  horizontalDistance = dist * cos(radians(pitch));
+  verticalDistance = dist * sin(radians(pitch));
+  cameraPos.y = shipPos.y + verticalDistance;
+  cameraPos.x = shipPos.x + horizontalDistance * sin(radians(yaw));
+  cameraPos.z = shipPos.z + horizontalDistance * cos(radians(yaw));
+  direction.x = sin(radians(yaw)) * cos(radians(pitch));
+  direction.z = cos(radians(yaw)) * cos(radians(pitch));
+  direction.y = sin(radians(pitch));
+  direction.normalize();
 }
 
 void drawSplashScreen(){
@@ -121,8 +136,9 @@ void drawSplashScreen(){
     textSize(128);
     text("Camera View",0,-100);
     textSize(32);
-    text("WASD para rotar el sistema",0,+50);
-    text("Barra Espaciadora para empezar",0,+100);
+    text("WASD para mover el tractor",0,+50);
+    text("Flechas para mover la cámara",0,+100);
+    text("Barra Espaciadora para empezar",0,+150);
     
     textColor.x += random(-10,10);
     textColor.y += random(-10,10);
